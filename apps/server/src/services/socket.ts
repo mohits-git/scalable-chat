@@ -1,4 +1,20 @@
+import dotenv from 'dotenv'
+dotenv.config();
 import { Server } from "socket.io";
+import Redis from "ioredis";
+
+const pub = new Redis({
+  username: process.env.REDIS_USER,
+  host: process.env.REDIS_HOST,
+  port: 21884,
+  password: process.env.REDIS_PASSWORD,
+});
+const sub = new Redis({
+  username: process.env.REDIS_USER,
+  host: process.env.REDIS_HOST,
+  port: 21884,
+  password: process.env.REDIS_PASSWORD,
+});
 
 class SocketService {
   private _io: Server;
@@ -10,11 +26,16 @@ class SocketService {
         origin: "*",
       }
     });
+    sub.subscribe("MESSAGES");
   }
 
-  public initListeners() {
+  public async initListeners() {
     const io = this.io;
     console.log("INIT SOCKET LISTENERS...");
+    sub.on("message", (channel, message) => {
+      if (channel === "MESSAGES")
+        io.emit('message', message);
+    });
     io.engine.on("connection_error", (err) => {
       console.log(err.req);
       console.log(err.code);
@@ -24,10 +45,10 @@ class SocketService {
     io.on("connect", async (socket) => {
       console.log("New socket connected", socket.id);
 
-      socket.on('disconnect', () => console.log("User disconnected."));
+      socket.on('disconnect', () => console.log("Socket disconnected."));
 
       socket.on("event:message", async ({ message }: { message: string }) => {
-        console.log("New message received: ", message);
+        await pub.publish('MESSAGES', JSON.stringify({ message }));
       });
 
     });
