@@ -4,13 +4,10 @@ import { useSocket } from '../context/SocketProvider';
 import classes from './page.module.css'
 
 export default function Page() {
-  const { sendMessage } = useSocket();
+  const { sendMessage, messages } = useSocket();
   const [message, setMessage] = useState('');
   return (
     <div>
-      <div>
-        <h1>All messages will appear here.</h1>
-      </div>
       <div>
         <input
           className={classes["chat-input"]}
@@ -21,6 +18,14 @@ export default function Page() {
           className={classes["button"]}
           onClick={e => sendMessage(message)}
         >Send</button>
+      </div>
+      <div>
+        <h1>All messages will appear here.</h1>
+        <ul>
+          {messages.map((msg, index) => (
+            <li key={index}>{msg}</li>
+          ))}
+        </ul>
       </div>
     </div>
   )
