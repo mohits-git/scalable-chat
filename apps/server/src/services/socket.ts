@@ -2,6 +2,7 @@ import dotenv from 'dotenv'
 dotenv.config();
 import { Server } from "socket.io";
 import Redis from "ioredis";
+import { produceMessage } from './kafka';
 
 const pub = new Redis({
   username: process.env.REDIS_USER,
@@ -32,9 +33,12 @@ class SocketService {
   public async initListeners() {
     const io = this.io;
     console.log("INIT SOCKET LISTENERS...");
-    sub.on("message", (channel, message) => {
-      if (channel === "MESSAGES")
+    sub.on("message", async (channel, message) => {
+      if (channel === "MESSAGES") {
         io.emit('message', message);
+        await produceMessage(message);
+        console.log("Message Produced to Kafka broker.")
+      }
     });
     io.engine.on("connection_error", (err) => {
       console.log(err.req);
